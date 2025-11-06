@@ -79,14 +79,13 @@ class OPT3001:
 
     def _write_register(self, register, value):
         """Write a 16-bit value to a register."""
-        self._buffer[0] = (value >> 8) & 0xFF
-        self._buffer[1] = value & 0xFF
+        # Pack register address and 16-bit value (MSB first)
+        data = bytes([register, (value >> 8) & 0xFF, value & 0xFF])
 
         while not self.i2c.try_lock():
             pass
         try:
-            self.i2c.writeto_then_readfrom(self.address, bytes([register]), self._buffer, out_end=0, in_start=0)
-            self.i2c.writeto(self.address, bytes([register, self._buffer[0], self._buffer[1]]))
+            self.i2c.writeto(self.address, data)
         finally:
             self.i2c.unlock()
 
@@ -133,7 +132,7 @@ class OPT3001:
         # Start with automatic full-scale range (RN=1100b = 0xC)
         config = 0xC000 if range_auto else 0x0000
 
-        # Set conversion time
+        # Set conversion time (bit 11: 1=800ms, 0=100ms)
         if conversion_time == CONVERSION_800MS:
             config |= _CONFIG_CT
 
@@ -141,6 +140,18 @@ class OPT3001:
         config |= (mode << 9)
 
         self._write_register(_REG_CONFIG, config)
+
+        # Small delay to let configuration take effect
+        time.sleep(0.01)
+
+    def get_config(self):
+        """
+        Read the current configuration register value.
+
+        Returns:
+            16-bit configuration register value
+        """
+        return self._read_register(_REG_CONFIG)
 
     def read_raw(self):
         """

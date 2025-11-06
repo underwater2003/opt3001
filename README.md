@@ -133,6 +133,21 @@ sensor.configure(mode=MODE_CONTINUOUS, conversion_time=CONVERSION_100MS)
 
 ---
 
+##### `get_config()`
+
+Read the current configuration register value.
+
+**Returns:** `int` - 16-bit configuration register value
+
+Useful for debugging and verifying sensor configuration.
+
+```python
+config = sensor.get_config()
+print("Config: 0x{:04X}".format(config))
+```
+
+---
+
 ##### `single_shot()`
 
 Trigger a single conversion and return the result.
@@ -264,6 +279,15 @@ See `example_advanced.py` for demonstrations of:
 - **RP2040**: `example_rp2040.py` - LED feedback on light changes
 - **ESP32-S3**: `example_esp32s3.py` - Optimized for ESP32-S3 boards
 
+### Debug Example
+
+- **Debug**: `example_debug.py` - Diagnostic tool to troubleshoot sensor issues
+  - Scans I2C bus for devices
+  - Verifies device IDs
+  - Displays raw register values
+  - Decodes configuration register
+  - Helps identify wiring or configuration problems
+
 ---
 
 ## Specifications
@@ -294,11 +318,24 @@ See `example_advanced.py` for demonstrations of:
    i2c.unlock()
    ```
 
+### Sensor always returns 0.0 lux
+
+This was a known issue in earlier versions, now fixed. If you still see zero readings:
+
+1. Make sure you're using the latest version of the driver
+2. Run `example_debug.py` to verify:
+   - Device IDs are correct (Manufacturer: 0x5449, Device: 0x3001)
+   - Configuration register shows correct mode (should be 0xCC00 for default)
+   - Raw register values are non-zero when light is present
+3. Check sensor is not covered or blocked
+4. Verify the sensor has power (3.3V) and proper I2C pull-up resistors
+
 ### Readings seem incorrect
 
 1. Ensure proper conversion time - use 800ms for better accuracy
 2. Check that the sensor is not covered or obstructed
 3. Verify sensor is in continuous mode for repeated readings
+4. Use `get_config()` to verify configuration is correct
 
 ### Memory errors on small boards
 
